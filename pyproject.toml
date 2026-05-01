@@ -57,6 +57,7 @@ dependencies = [
   "requests",                              # To download files automatically
   "rich",                                  # To display downlaod progress bar
   "scipy",
+  "spherical",                             # To compute spin-weighted spherical harmonics
   "tqdm",
   "wrapt",
   #@DEPS_CUPYCUDA@,
