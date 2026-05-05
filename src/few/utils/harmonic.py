@@ -1,6 +1,6 @@
 from typing import Optional, Union
 import numpy as np
-from numba import jit as numba_jit
+from numba import njit
 from functools import partial
 from .globals import Globals, get_config
 
@@ -8,9 +8,6 @@ import quaternionic
 import spherical
 from spherical import Wigner as WignerSpherical
 from spherical.wigner import WignerHindex, _complex_powers, to_euler_phases, inverse_4pi, ε
-
-cfg = get_config()
-jit = partial(numba_jit, cache=cfg.numba_jit_cache, nopython=True)
 
 class Wigner(WignerSpherical):
     def sYlms(self, s, l, m, R, out=None, workspace=None):
@@ -160,7 +157,7 @@ class Wigner(WignerSpherical):
         R = quaternionic.array.from_spherical_coordinates(theta, phi)
         return self.sYlms(s, l, m, R, out=out, workspace=workspace)
 
-@jit
+@njit
 def _fill_sYlms(mp_max, s, ell_arr, m_arr, Y, Hwedge, zₐpowers, zᵧpower):
     """Helper function for Wigner.sYlms"""
     #  ₛYₗₘ(R) = (-1)ˢ √((2ℓ+1)/(4π)) 𝔇ˡₘ₋ₛ(R)
@@ -185,7 +182,6 @@ def _fill_sYlms(mp_max, s, ell_arr, m_arr, Y, Hwedge, zₐpowers, zᵧpower):
             else:
                 Y[i_Y] = c2 * ϵ(m) * Hwedge[i_H] * zₐpowers[m]
             i_Y += 1
-
 
 def Yslm(
     s: int, 
@@ -215,6 +211,7 @@ def Yslm(
         The value of the spin-weighted spherical harmonic at the given angles.
 
     """
+    assert np.all(abs(s) <= l) and np.all(abs(m) <= l), f"Invalid s, l, m values: s={s}, l={l}, m={m}"
     wigner = Wigner(max(l, abs(s)), abs(s))
     if isinstance(l, int) or isinstance(m, int):
         assert isinstance(l, int) and isinstance(m, int), "l and m must both be integers or both be arrays"

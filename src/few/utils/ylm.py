@@ -41,6 +41,7 @@ class GetYlms(ParallelModuleBase):
         theta: Union[float, np.ndarray],
         phi: Union[float, np.ndarray],
         include_minus_m: Optional[bool] = None,
+        bounds_check: bool = True
     ) -> np.ndarray:
         """Call method for Ylms.
 
@@ -58,6 +59,9 @@ class GetYlms(ParallelModuleBase):
         """
         if include_minus_m is None:
             include_minus_m = self.include_minus_m
+
+        if bounds_check:
+            assert self.xp.all(abs(self.spin_weight) <= l_in) and self.xp.all(self.xp.abs(m_in) <= l_in), f"Invalid s, l, m values: s={self.spin_weight}, l={l_in}, m={m_in}"
 
         if isinstance(l_in, int) or isinstance(m_in, int):
             assert isinstance(l_in, int) and isinstance(m_in, int)
