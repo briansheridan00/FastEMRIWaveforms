@@ -93,7 +93,7 @@ class ModeSelector(ParallelModuleBase):
         self.amplitude_generator = amplitude_generator
 
         if ylm_generator is None:
-            self.ylm_generator = GetYlms()
+            self.ylm_generator = GetYlms(lmax = amplitude_generator.lmax)
         else:
             self.ylm_generator = ylm_generator
 
