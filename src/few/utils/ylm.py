@@ -22,7 +22,7 @@ class GetYlms(ParallelModuleBase):
             :class:`few.utils.baseclasses.ParallelModuleBase`.
     """
 
-    def __init__(self, spin_weight: int = -2, include_minus_m: bool = False, lmax: int = 10, **kwargs: Optional[dict]):
+    def __init__(self, spin_weight: int = -2, include_minus_m: bool = False, lmax: int = 18, **kwargs: Optional[dict]):
         ParallelModuleBase.__init__(self, **kwargs)
         self.spin_weight = spin_weight
         self.include_minus_m = include_minus_m

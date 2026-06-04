@@ -16,6 +16,7 @@ from ..trajectory.ode import PN5, KerrEccEqFlux, SchwarzEccFlux
 from ..utils.baseclasses import (
     BackendLike,
     KerrEccentricEquatorial,
+    KerrEccentricEquatorialBase,
     SchwarzschildEccentric,
 )
 from ..utils.constants import MRSUN_SI, Gpc
@@ -513,7 +514,7 @@ class FastKerrEccentricEquatorialFlux(
 
 
 class FastKerrEccentricEquatorialFluxExtended( 
-    SphericalHarmonicWaveformBase #, KerrEccentricEquatorial
+    SphericalHarmonicWaveformBase, KerrEccentricEquatorialBase
 ):
     """Prebuilt model for fast Kerr eccentric equatorial flux-based waveforms
     with extended modes.
@@ -583,22 +584,9 @@ class FastKerrEccentricEquatorialFluxExtended(
             mode_selector_kwargs = {}
         mode_selection_module = ModeSelector
 
-        """
-        KerrEccentricEquatorial.__init__(
+        KerrEccentricEquatorialBase.__init__(
             self,
-            **{
-                key: value
-                for key, value in kwargs.items()
-                if key in ["lmax", "nmax", "ndim"]
-            },
-            force_backend=force_backend,
         )
-        """ 
-
-        self.background = "Kerr" 
-        self.descriptor = "eccentric equatorial"
-        self.frame = "source"
-        self.needs_Y = False 
 
         SphericalHarmonicWaveformBase.__init__(
             self,

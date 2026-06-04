@@ -511,9 +511,12 @@ class ModeIndicesLMBase(ABC, ParallelModuleBase):
         # number of m > 0
         self.num_m_1_up = self.num_m_zero_up - self.num_m0
 
+        mode_sign = [1] * len(md)
+        mode_sign[1] = -1
+
         # create final arrays to include -m modes
         self.mode_arr = self.xp.asarray(
-            [self.xp.concatenate([mode, mode[self.m0mask]]) for mode in md]
+            [self.xp.concatenate([mode, sign*mode[self.m0mask]]) for mode, sign in zip(md, mode_sign)]
         ).T
         
         self.l_arr = self.mode_arr[:, 0]
@@ -827,6 +830,156 @@ class SchwarzschildEccentric(SphericalHarmonic):
         return a, xI
 
 
+class KerrEccentricEquatorialBase:
+    """
+    Kerr eccentric equatorial base class.
+    """
+
+    background: str = "Kerr"
+    """The spacetime background for this model."""
+
+    descriptor: str = "eccentric equatorial"
+    """Description of the inspiral trajectory properties for this model."""
+
+    frame: str = "source"
+    """Frame in which source is generated. Is source frame."""
+
+    needs_Y: bool = False
+    """If True, model expects inclination parameter Y (rather than xI)."""
+
+    def __init__(
+        self
+    ):
+       pass
+
+    def sanity_check_init(
+        self, m1: float, m2: float, a: float, p0: float, e0: float, xI: float
+    ) -> tuple[float, float]:
+        r"""Sanity check initial parameters.
+
+        Make sure parameters are within allowable ranges.
+
+        args:
+            m1: Massive black hole mass in solar masses.
+            m2: compact object mass in solar masses.
+            a: Dimensionless spin of massive black hole.
+            p0: Initial semilatus rectum (dimensionless)
+                :math:`(10\leq p_0\leq 16 + 2e_0)`. See the documentation for
+                more information on :math:`p_0 \leq 10.0`.
+            e0: Initial eccentricity :math:`(0\leq e_0\leq0.7)`.
+            xI: Initial cosine(inclination) :math:`(|x_I| = 1)`.
+
+        Returns:
+            (a_fix, xI_fix): a and xI in the correct convention (a >= 0).
+
+        Raises:
+            ValueError: If any of the parameters are not allowed.
+
+        """
+        # TODO: update function when grids replaced
+
+        for val, key in [[m1, "m1"], [p0, "p0"], [e0, "e0"], [m2, "m2"]]:
+            test = val < 0.0
+            if test:
+                raise ValueError("{} is negative. It must be positive.".format(key))
+
+        if m1 < m2:
+            raise ValueError(
+                "Massive black hole mass must be larger than the compact object mass. (m1={}, m2={})".format(
+                    m1, m2
+                )
+            )
+
+        if xI < 0:
+            # flip convention
+            get_logger().warning(
+                "Negative inclination detected. Flipping sign of a and xI to match convention."
+            )
+            a = -a
+            xI = -xI
+
+        if a > 0.999:
+            raise ValueError(
+                "Larger black hole spin magnitude above 0.999 is outside of our domain of validity."
+            )
+
+        # transform parameters and check they are within bounds
+        a_sign = a * xI
+        xI_in = abs(xI)
+        grid_coords = kerrecceq_forward_map(a_sign, p0, e0, xI_in)
+
+        if np.isnan(grid_coords[0]):
+            raise ValueError(
+                f"This value of p0 ({p0}) is too close to the separatrix for our model."
+            )
+        elif grid_coords[0] > 1.000001:
+            raise ValueError(
+                f"This value of p0 ({p0}) is outside of our domain of validity."
+            )
+        if grid_coords[1] < -1e-6 or grid_coords[1] > 1.000001:
+            raise ValueError(
+                f"This a ({a}), p0 ({p0}) and e0 ({e0}) combination is outside of our domain of validity."
+            )
+
+        if abs(xI) != 1.0:
+            raise ValueError("For equatorial orbits, xI must be either 1 or -1.")
+
+        return a, xI
+    
+    def sanity_check_viewing_angles(self, theta: float, phi: float):
+        """Sanity check on viewing angles.
+
+        Make sure parameters are within allowable ranges.
+
+        args:
+            theta (double): Polar viewing angle.
+            phi (double): Azimuthal viewing angle.
+
+        Returns:
+            tuple: (theta, phi). Phi is wrapped.
+
+        Raises:
+            ValueError: If any of the angular values are not allowed.
+
+        """
+        # if theta < 0.0 or theta > np.pi:
+        #    raise ValueError("theta must be between 0 and pi.")
+
+        phi = phi % (2 * np.pi)
+        return (theta, phi)
+
+    def sanity_check_traj(self, a: float, p: np.ndarray, e: np.ndarray, xI: np.ndarray):
+        """Sanity check on parameters output from the trajectory module.
+
+        Make sure parameters are within allowable ranges.
+
+        args:
+            a: Dimensionless spin of massive black hole.
+            p: Array of semi-latus rectum values produced by
+                the trajectory module.
+            e: Array of eccentricity values produced by
+                the trajectory module.
+            xI: Array of cosine(inclination) values produced by the trajectory module.
+
+        Raises:
+            ValueError: If any of the trajectory points are not allowed.
+            warn: If any points in the trajectory are allowable,
+                but outside calibration region.
+
+        """
+
+        if np.any(e < 0.0):
+            raise ValueError("Members of e array are less than zero.")
+
+        if np.any(p < 0.0):
+            raise ValueError("Members of p array are less than zero.")
+
+        if np.any(abs(a) > 1.0):
+            raise ValueError("Members of a array have a magnitude greater than one.")
+
+        if np.any(abs(xI) > 1.0):
+            raise ValueError("Members of xI array have a magnitude greater than one.")
+    
 class KerrEccentricEquatorial(SphericalHarmonic):
     """
     Kerr eccentric equatorial base class.
