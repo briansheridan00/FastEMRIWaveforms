@@ -5,6 +5,7 @@ generation interface `GenerateEMRIWaveform`.
 
 from .waveform import (
     FastKerrEccentricEquatorialFlux,
+    FastKerrEccentricEquatorialFluxExtended,
     FastSchwarzschildEccentricFlux,
     FastSchwarzschildEccentricFluxBicubic,
     GenerateEMRIWaveform,
@@ -15,6 +16,7 @@ from .waveform import (
 __all__ = [
     "GenerateEMRIWaveform",
     "FastKerrEccentricEquatorialFlux",
+    "FastKerrEccentricEquatorialFluxExtended",
     "FastSchwarzschildEccentricFlux",
     "FastSchwarzschildEccentricFluxBicubic",
     "SlowSchwarzschildEccentricFlux",
