@@ -153,14 +153,14 @@ class AmpInterp2D(AmplitudeBase, ParallelModuleBase):
 
         # standard Numpy broadcasting
         if w.shape != u.shape:
-            w, u = np.broadcast_arrays(w, u)
+            w, u = self.xp.broadcast_arrays(w, u)
 
         shape = w.shape
         w = w.ravel()
         u = u.ravel()
 
         if w.size == 0 or u.size == 0:
-            return np.zeros(shape, dtype=self.tck[2].dtype)
+            return self.xp.zeros(shape, dtype=self.xp.complex128)
 
         nw = tw.shape[0]
         nu = tu.shape[0]
@@ -662,7 +662,7 @@ class AmpInterpKerrEccEqExtended(AmpInterpKerrEccEqv2):
         AmplitudeBase.__init__(self)
 
         self.filename = (
-            "ZNAmps_l18_m18_n279_DS2Outer_v2.h5" if filename is None else filename
+            "ZNAmps_l20_m20_n743_DS2Outer_v3.h5" if filename is None else filename
         )
 
         from few import get_file_manager

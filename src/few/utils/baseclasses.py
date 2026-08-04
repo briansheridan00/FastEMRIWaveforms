@@ -463,7 +463,7 @@ class ModeIndicesLMBase(ABC, ParallelModuleBase):
     def __init__(self, mode_indices: xp_ndarray, force_backend: BackendLike = None):
         ParallelModuleBase.__init__(self, force_backend=force_backend)
 
-        self.modemax = self.xp.max(mode_indices, axis=0)
+        self.modemax = self.xp.max(self.xp.abs(mode_indices), axis=0)
 
         self.lmax = self.modemax[0]
         self.mmax = self.modemax[1]
@@ -591,29 +591,27 @@ class ModeIndicesLMBase(ABC, ParallelModuleBase):
 
             # regular index to mode tuple
             self.index_map_m_positive[tuple(mode)] = i
-            self.index_map_m_positive_arr[*mode] = i
+            self.index_map_m_positive_arr[tuple(mode)] = i
 
             self.special_index_map[tuple(mode)] = i
-            self.special_index_map_arr[*mode] = i
+            self.special_index_map_arr[tuple(mode)] = i
 
             neg_mode = mode.copy()
             neg_mode[1:] *= -1
             if mode[1] > 0:
                 self.index_map_m_negative[tuple(neg_mode)] = i
-                self.index_map_m_negative_arr[*neg_mode] = i
+                self.index_map_m_negative_arr[tuple(neg_mode)] = i
 
                 self.special_index_map[tuple(neg_mode)] = i
-                self.special_index_map_arr[*neg_mode] = i
+                self.special_index_map_arr[tuple(neg_mode)] = i
             else:
                 self.index_map_m_negative[tuple(neg_mode)] = i
-                self.index_map_m_negative_arr[*neg_mode] = i
+                self.index_map_m_negative_arr[tuple(neg_mode)] = i
 
         negative_mode_arr = md.copy()
         negative_mode_arr[1] *= -1
         # mode indices for all negative m-modes
-        self.negative_mode_indices = self.special_index_map_arr[
-            *negative_mode_arr
-        ]
+        self.negative_mode_indices = self.special_index_map_arr[tuple(negative_mode_arr)]
 
     @property
     @abstractmethod
@@ -673,7 +671,7 @@ class ModeIndicesLMBase(ABC, ParallelModuleBase):
                         f"Could not find mode {failed_mode}."
                     )
                 mode_indices = self.special_index_map_arr[
-                    *specific_modes_arr.T,
+                    tuple(specific_modes_arr.T),
                 ] # find locations of the modes in the special index map array
                 if self.xp.any(mode_indices == -1):
                     failed_mode = specific_modes_arr[
