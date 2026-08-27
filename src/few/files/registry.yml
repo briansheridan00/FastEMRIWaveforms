@@ -294,3 +294,13 @@ files:
       - algorithm: sha256
         value: fdeae06d60db8743991839cc29cc373b7927311afdd01372c76d48fb127e0c3f
     tags: [testfile]
+  - name: ZNAmps_l24_m24_n313_DS2Outer_v4.h5
+    checksums:
+      - algorithm: sha256
+        value: 9d65a8571fe347dbfa066a4634a83d42f1ebbc8d8ec346e01f6be34afc3f004c
+    tags: [testfile]
+  - name: ZNAmps_l24_m24_n275_DS2Outer_v5.h5
+    checksums:
+      - algorithm: sha256
+        value: 5c87795036b93c8ee9d44e879c70af5941df6cae086870c0ace29a3ed9ccf22d
+    tags: [testfile]

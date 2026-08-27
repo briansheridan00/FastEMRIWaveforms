@@ -212,7 +212,8 @@ class AmpInterpKerrEccEq(AmplitudeBase, KerrEccentricEquatorial):
 
     spin_information_holder_A: list[AmpInterp2D]
 
-    z_values: np.ndarray
+    z_values_A: np.ndarray
+    z_values_B: np.ndarray
 
     def __init__(
         self,
@@ -258,6 +259,9 @@ class AmpInterpKerrEccEq(AmplitudeBase, KerrEccentricEquatorial):
                 for i in range(z_knots.size)
             ]
 
+            self.z_values_A = z_knots
+            self.z_values_B = z_knots
+
             try:
                 regionB = f["regionB"]
                 coeffsB = regionB["CoeffsRegionB"][()]
@@ -285,27 +289,48 @@ class AmpInterpKerrEccEq(AmplitudeBase, KerrEccentricEquatorial):
                     )
                     for i in range(z_knots.size)
                 ]
+
+                self.z_values_B = z_knots
             except KeyError:
                 pass
 
-        self.z_values = z_knots
+    def _find_z_bracket(self, z_values, z_check):
+        z_values = self.xp.asarray(z_values)
+        if z_check in z_values:
+            try:
+                ind = self.xp.where(z_values == z_check)[0].get()[0]
+            except AttributeError:
+                ind = self.xp.where(z_values == z_check)[0][0]
+            return ind, ind, None, None
 
-    def _evaluate_interpolant_at_index(self, index, region_A_mask, w, u, mode_indexes):
-        z_out = self.xp.zeros(
-            (region_A_mask.size, self.num_modes_eval), dtype=self.xp.complex128
+        try:
+            ind_above = self.xp.where(z_values > z_check)[0].get()[0]
+        except AttributeError:
+            ind_above = self.xp.where(z_values > z_check)[0][0]
+        ind_below = ind_above - 1
+        assert ind_above < len(z_values)
+        assert ind_below >= 0
+        return ind_below, ind_above, z_values[ind_below], z_values[ind_above]
+
+    def _evaluate_region(
+        self, spin_information_holder, z_values, w_region, u_region, mode_indexes, z_check
+    ):
+        ind_below, ind_above, z_below, z_above = self._find_z_bracket(z_values, z_check)
+
+        if ind_below == ind_above:
+            return spin_information_holder[ind_above](
+                w_region, u_region, mode_indexes=mode_indexes
+            )
+
+        amp_above = spin_information_holder[ind_above](
+            w_region, u_region, mode_indexes=mode_indexes
         )
-
-        if self.xp.any(region_A_mask):
-            z_out[region_A_mask, :] = self.spin_information_holder_A[index](
-                w[region_A_mask], u[region_A_mask], mode_indexes=mode_indexes
-            )
-
-        if self.xp.any(~region_A_mask):
-            z_out[~region_A_mask, :] = self.spin_information_holder_B[index](
-                w[~region_A_mask], u[~region_A_mask], mode_indexes=mode_indexes
-            )
-
-        return z_out
+        amp_below = spin_information_holder[ind_below](
+            w_region, u_region, mode_indexes=mode_indexes
+        )
+        return ((amp_above - amp_below) / (z_above - z_below)) * (
+            z_check - z_below
+        ) + amp_below
 
     def get_amplitudes(
         self,
@@ -367,44 +392,34 @@ class AmpInterpKerrEccEq(AmplitudeBase, KerrEccentricEquatorial):
         u = self.xp.asarray(u)
         w = self.xp.asarray(w)
         z = self.xp.asarray(z)
-        self.z_values = self.xp.asarray(self.z_values)
 
         for elem in [u, w, z]:
             if self.xp.any((elem < 0) | (elem > 1)):
                 raise ValueError("Amplitude interpolant accessed out-of-bounds.")
 
-        if z_check in self.z_values:
-            try:
-                ind_1 = self.xp.where(self.z_values == z_check)[0].get()[0]
-            except AttributeError:
-                ind_1 = self.xp.where(self.z_values == z_check)[0][0]
+        Amp_z = self.xp.zeros(
+            (region_mask.size, self.num_modes_eval), dtype=self.xp.complex128
+        )
 
-            Amp_z = self._evaluate_interpolant_at_index(
-                ind_1, region_mask, w, u, mode_indexes=specific_modes
+        if self.xp.any(region_mask):
+            Amp_z[region_mask, :] = self._evaluate_region(
+                self.spin_information_holder_A,
+                self.z_values_A,
+                w[region_mask],
+                u[region_mask],
+                specific_modes,
+                z_check,
             )
 
-        else:
-            try:
-                ind_above = self.xp.where(self.z_values > z_check)[0].get()[0]
-            except AttributeError:
-                ind_above = self.xp.where(self.z_values > z_check)[0][0]
-            ind_below = ind_above - 1
-            assert ind_above < len(self.z_values)
-            assert ind_below >= 0
-
-            z_above = self.z_values[ind_above]
-            Amp_above = self._evaluate_interpolant_at_index(
-                ind_above, region_mask, w, u, specific_modes
+        if self.xp.any(~region_mask):
+            Amp_z[~region_mask, :] = self._evaluate_region(
+                self.spin_information_holder_B,
+                self.z_values_B,
+                w[~region_mask],
+                u[~region_mask],
+                specific_modes,
+                z_check,
             )
-
-            z_below = self.z_values[ind_below]
-            Amp_below = self._evaluate_interpolant_at_index(
-                ind_below, region_mask, w, u, specific_modes
-            )
-
-            Amp_z = ((Amp_above - Amp_below) / (z_above - z_below)) * (
-                z_check - z_below
-            ) + Amp_below
 
         return Amp_z
 
@@ -434,7 +449,8 @@ class AmpInterpKerrEccEqv2(AmplitudeBase, KerrEccentricEquatorialv2):
 
     spin_information_holder_A: list[AmpInterp2D]
 
-    z_values: np.ndarray
+    z_values_A: np.ndarray
+    z_values_B: np.ndarray
 
     def __init__(
         self,
@@ -485,6 +501,9 @@ class AmpInterpKerrEccEqv2(AmplitudeBase, KerrEccentricEquatorialv2):
                 for i in range(z_knots.size)
             ]
 
+            self.z_values_A = z_knots
+            self.z_values_B = z_knots
+
             try:
                 regionB = f["regionB"]
                 coeffsB = regionB["CoeffsRegionB"][()]
@@ -512,27 +531,48 @@ class AmpInterpKerrEccEqv2(AmplitudeBase, KerrEccentricEquatorialv2):
                     )
                     for i in range(z_knots.size)
                 ]
+
+                self.z_values_B = z_knots
             except KeyError:
                 pass
 
-        self.z_values = z_knots
+    def _find_z_bracket(self, z_values, z_check):
+        z_values = self.xp.asarray(z_values)
+        if z_check in z_values:
+            try:
+                ind = self.xp.where(z_values == z_check)[0].get()[0]
+            except AttributeError:
+                ind = self.xp.where(z_values == z_check)[0][0]
+            return ind, ind, None, None
 
-    def _evaluate_interpolant_at_index(self, index, region_A_mask, w, u, mode_indexes):
-        z_out = self.xp.zeros(
-            (region_A_mask.size, self.num_modes_eval), dtype=self.xp.complex128
+        try:
+            ind_above = self.xp.where(z_values > z_check)[0].get()[0]
+        except AttributeError:
+            ind_above = self.xp.where(z_values > z_check)[0][0]
+        ind_below = ind_above - 1
+        assert ind_above < len(z_values)
+        assert ind_below >= 0
+        return ind_below, ind_above, z_values[ind_below], z_values[ind_above]
+
+    def _evaluate_region(
+        self, spin_information_holder, z_values, w_region, u_region, mode_indexes, z_check
+    ):
+        ind_below, ind_above, z_below, z_above = self._find_z_bracket(z_values, z_check)
+
+        if ind_below == ind_above:
+            return spin_information_holder[ind_above](
+                w_region, u_region, mode_indexes=mode_indexes
+            )
+
+        amp_above = spin_information_holder[ind_above](
+            w_region, u_region, mode_indexes=mode_indexes
         )
-
-        if self.xp.any(region_A_mask):
-            z_out[region_A_mask, :] = self.spin_information_holder_A[index](
-                w[region_A_mask], u[region_A_mask], mode_indexes=mode_indexes
-            )
-
-        if self.xp.any(~region_A_mask):
-            z_out[~region_A_mask, :] = self.spin_information_holder_B[index](
-                w[~region_A_mask], u[~region_A_mask], mode_indexes=mode_indexes
-            )
-
-        return z_out
+        amp_below = spin_information_holder[ind_below](
+            w_region, u_region, mode_indexes=mode_indexes
+        )
+        return ((amp_above - amp_below) / (z_above - z_below)) * (
+            z_check - z_below
+        ) + amp_below
 
     def get_amplitudes(
         self,
@@ -594,47 +634,37 @@ class AmpInterpKerrEccEqv2(AmplitudeBase, KerrEccentricEquatorialv2):
         u = self.xp.asarray(u)
         w = self.xp.asarray(w)
         z = self.xp.asarray(z)
-        self.z_values = self.xp.asarray(self.z_values)
 
         for elem in [u, w, z]:
             if self.xp.any((elem < 0) | (elem > 1)):
                 raise ValueError("Amplitude interpolant accessed out-of-bounds.")
 
-        if z_check in self.z_values:
-            try:
-                ind_1 = self.xp.where(self.z_values == z_check)[0].get()[0]
-            except AttributeError:
-                ind_1 = self.xp.where(self.z_values == z_check)[0][0]
+        Amp_z = self.xp.zeros(
+            (region_mask.size, self.num_modes_eval), dtype=self.xp.complex128
+        )
 
-            Amp_z = self._evaluate_interpolant_at_index(
-                ind_1, region_mask, w, u, mode_indexes=specific_modes
+        if self.xp.any(region_mask):
+            Amp_z[region_mask, :] = self._evaluate_region(
+                self.spin_information_holder_A,
+                self.z_values_A,
+                w[region_mask],
+                u[region_mask],
+                specific_modes,
+                z_check,
             )
 
-        else:
-            try:
-                ind_above = self.xp.where(self.z_values > z_check)[0].get()[0]
-            except AttributeError:
-                ind_above = self.xp.where(self.z_values > z_check)[0][0]
-            ind_below = ind_above - 1
-            assert ind_above < len(self.z_values)
-            assert ind_below >= 0
-
-            z_above = self.z_values[ind_above]
-            Amp_above = self._evaluate_interpolant_at_index(
-                ind_above, region_mask, w, u, specific_modes
+        if self.xp.any(~region_mask):
+            Amp_z[~region_mask, :] = self._evaluate_region(
+                self.spin_information_holder_B,
+                self.z_values_B,
+                w[~region_mask],
+                u[~region_mask],
+                specific_modes,
+                z_check,
             )
-
-            z_below = self.z_values[ind_below]
-            Amp_below = self._evaluate_interpolant_at_index(
-                ind_below, region_mask, w, u, specific_modes
-            )
-
-            Amp_z = ((Amp_above - Amp_below) / (z_above - z_below)) * (
-                z_check - z_below
-            ) + Amp_below
 
         return Amp_z
-    
+
 class AmpInterpKerrEccEqExtended(AmpInterpKerrEccEqv2):
     """Calculate Teukolsky amplitudes in the Kerr eccentric equatorial regime with a bicubic spline + linear
     interpolation scheme.
@@ -662,7 +692,7 @@ class AmpInterpKerrEccEqExtended(AmpInterpKerrEccEqv2):
         AmplitudeBase.__init__(self)
 
         self.filename = (
-            "ZNAmps_l20_m20_n275_DS2Outer_v3.h5" if filename is None else filename
+            "ZNAmps_l24_m24_n275_DS2Outer_v5.h5" if filename is None else filename
         )
 
         from few import get_file_manager
@@ -701,6 +731,9 @@ class AmpInterpKerrEccEqExtended(AmpInterpKerrEccEqv2):
                 for i in range(z_knots.size)
             ]
 
+            self.z_values_A = z_knots
+            self.z_values_B = z_knots
+
             try:
                 regionB = f["regionB"]
                 coeffsB = regionB["CoeffsRegionB"][()]
@@ -728,10 +761,10 @@ class AmpInterpKerrEccEqExtended(AmpInterpKerrEccEqv2):
                     )
                     for i in range(z_knots.size)
                 ]
+
+                self.z_values_B = z_knots
             except KeyError:
                 pass
-
-        self.z_values = z_knots
 class AmpInterpSchwarzEcc(AmplitudeBase, SchwarzschildEccentric):
     """Calculate Teukolsky amplitudes in the Schwarzschild eccentric regime with a bicubic spline interpolation.
 
