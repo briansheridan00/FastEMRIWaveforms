@@ -218,7 +218,10 @@ void interp2D_wrap(double* z, const double* tx, int nx, const double* ty, int ny
         shared_memory_size));
 
     int num_blocks = std::ceil((mx + NUM_THREADS -1)/NUM_THREADS);
-    dim3 grid(num_blocks, num_indiv_c);
+    // grid.y is capped at the CUDA limit (65535); the kernel loops over c_i with a
+    // gridDim.y stride, so fewer blocks than num_indiv_c still covers every mode.
+    int grid_y = (num_indiv_c < 65535) ? num_indiv_c : 65535;
+    dim3 grid(num_blocks, grid_y);
     interp2D<<<grid, NUM_THREADS, shared_memory_size>>>(
         z,
         tx, nx, ty, ny, c,
