@@ -853,6 +853,10 @@ class DOPR853:
         spline_coeffs: np.ndarray,
         order: int = 1,
     ):
+        # this spline evaluation is a host (numpy) routine; bring device arrays to host
+        if hasattr(t_new, "get"):
+            t_new = t_new.get()
+
         t_min = t_old.min()
         t_max = t_old.max()
         if not np.all((t_min <= t_new) & (t_new <= t_max)):
