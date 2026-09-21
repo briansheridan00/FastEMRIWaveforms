@@ -468,8 +468,8 @@ class ModeIndicesLMBase(ABC, ParallelModuleBase):
 
         self.modemax = self.xp.max(self.xp.abs(mode_indices), axis=0)
 
-        self.lmax = self.modemax[0]
-        self.mmax = self.modemax[1]
+        self.lmax = int(self.modemax[0])
+        self.mmax = int(self.modemax[1])
 
         # total number of modes in the model
         self.num_modes = len(mode_indices)
@@ -564,23 +564,25 @@ class ModeIndicesLMBase(ABC, ParallelModuleBase):
         special_index_shape = self.modemax.copy()
         special_index_shape[:2] += 1
         special_index_shape[2:] = special_index_shape[2:] * 2 + 1
+        # host-side int tuple so cupy/numpy zeros accepts the shape
+        special_index_shape = tuple(int(x) for x in special_index_shape)
         self.index_map_m_positive_arr = (
             self.xp.zeros(
-                tuple(special_index_shape),
+                special_index_shape,
                 dtype=self.xp.int32,
             )
             - 1
         )
         self.index_map_m_negative_arr = (
             self.xp.zeros(
-                tuple(special_index_shape),
+                special_index_shape,
                 dtype=self.xp.int32,
             )
             - 1
         )
         self.special_index_map_arr = (
             self.xp.zeros(
-                tuple(special_index_shape),
+                special_index_shape,
                 dtype=self.xp.int32,
             )
             - 1
@@ -711,8 +713,8 @@ class ModeIndicesLMKN(ModeIndicesLMBase):
     def __init__(self, mode_indices: xp_ndarray, force_backend: BackendLike = None):
         ModeIndicesLMBase.__init__(self, mode_indices=mode_indices, force_backend=force_backend)
 
-        self.kmax = self.modemax[2]
-        self.nmax = self.modemax[3]
+        self.kmax = int(self.modemax[2])
+        self.nmax = int(self.modemax[3])
 
         self.k_arr_no_mask = self.mode_arr_no_mask[:, 2] # k is always 0 for equatorial orbits
         self.n_arr_no_mask = self.mode_arr_no_mask[:, 3] # n is always 0 for non-eccentric orbits
