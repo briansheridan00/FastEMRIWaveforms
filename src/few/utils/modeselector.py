@@ -219,9 +219,11 @@ class ModeSelector(ParallelModuleBase):
                     "(ModeSelector) Warning: Mode selection is large. Instantiate class with mode selection rather than providing it at call time for better performance."
                 )
 
-            if self.xp.any(
-                self.xp.unique(
-                    self.xp.asarray(mode_selection), return_counts=True, axis=0
+            # duplicate check is pure validation on a small list; run it on the
+            # host -- cupy's unique(axis=0) is pathologically slow (~20000x here).
+            if np.any(
+                np.unique(
+                    np.asarray(mode_selection), return_counts=True, axis=0
                 )[1]
                 > 1
             ):
