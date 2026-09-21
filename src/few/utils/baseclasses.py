@@ -463,6 +463,9 @@ class ModeIndicesLMBase(ABC, ParallelModuleBase):
     def __init__(self, mode_indices: xp_ndarray, force_backend: BackendLike = None):
         ParallelModuleBase.__init__(self, force_backend=force_backend)
 
+        # coerce to the active backend so GPU runs work with numpy-loaded indices
+        mode_indices = self.xp.asarray(mode_indices)
+
         self.modemax = self.xp.max(self.xp.abs(mode_indices), axis=0)
 
         self.lmax = self.modemax[0]
