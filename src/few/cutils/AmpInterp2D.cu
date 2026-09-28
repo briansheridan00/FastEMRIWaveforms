@@ -192,6 +192,9 @@ void interp2D(double* z, const double* tx, int nx, const double* ty, int ny,
             z[c_i * mx + i] = z_temp;
 
         }
+        // when gridDim.y < num_indiv_c a block handles several c_i; wait for every
+        // thread to finish reading c_indiv before the next c_i overwrites it
+        CUDA_SYNC_THREADS;
     }
     #ifdef __CUDACC__
     #else
