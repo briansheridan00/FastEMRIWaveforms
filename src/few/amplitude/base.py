@@ -79,12 +79,19 @@ class AmplitudeBase(ParallelModuleBase):
         else:
             m_mode_sign = 1
 
+        # modes whose (-k, -n) partner is not stored (ModeIndicesLMBase only); zeroed at the end
+        negative_mode_missing = getattr(self, "negative_mode_missing", None)
+        missing_mode_mask = None
+
         if specific_modes is not None: # if the user has specified modes
             self.num_modes_eval = len(specific_modes)
             if isinstance(specific_modes, self.xp.ndarray):
                 mode_indices = specific_modes.copy()
                 # Identify requested negative mkn modes, the conjugate relation must be applied at the end
                 conj_mode_mask = mode_indices >= self.num_teuk_modes
+                if negative_mode_missing is not None:
+                    missing_mode_mask = self.xp.zeros_like(conj_mode_mask)
+                    missing_mode_mask[conj_mode_mask] = negative_mode_missing[mode_indices[conj_mode_mask] - self.num_m_1_up]
                 mode_indices[conj_mode_mask] = self.negative_mode_indices[mode_indices[conj_mode_mask] - self.num_m_1_up]
 
             elif isinstance(specific_modes, list):
@@ -108,6 +115,7 @@ class AmplitudeBase(ParallelModuleBase):
             if m_mode_sign < 0: # check to see whether xI is negative
                 mode_indices = self.negative_mode_indices # if so, use negative m-modes. Note this is defined in SphericalHarmonic base class
                 conj_mode_mask = self.xp.ones_like(mode_indices, dtype=bool) # Identify requested negative mkn modes
+                missing_mode_mask = negative_mode_missing
 
             else:
                 mode_indices = self.mode_indices
@@ -128,7 +136,10 @@ class AmplitudeBase(ParallelModuleBase):
                     (-1) ** (self.l_arr + self.k_arr)[mode_indices[conj_mode_mask]]
                     * self.xp.conj(teuk_modes[:, conj_mode_mask])
                 )
-            
+            if missing_mode_mask is not None and self.xp.any(missing_mode_mask):
+                # partner mode not in the amplitude library: treat as negligible
+                teuk_modes[:, missing_mode_mask] = 0.0
+
             return teuk_modes
 
         else:

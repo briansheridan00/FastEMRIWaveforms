@@ -561,9 +561,11 @@ class ModeIndicesLMBase(ABC, ParallelModuleBase):
         self.index_map_m_negative = {}
         self.special_index_map = {}  # maps the minus m values to positive m
         
+        # m, k and n are indexed with signed values, so each needs 2*max + 1 slots;
+        # with only mmax + 1 slots in m, a negative m wraps onto a positive m entry
         special_index_shape = self.modemax.copy()
-        special_index_shape[:2] += 1
-        special_index_shape[2:] = special_index_shape[2:] * 2 + 1
+        special_index_shape[0] += 1
+        special_index_shape[1:] = special_index_shape[1:] * 2 + 1
         # host-side int tuple so cupy/numpy zeros accepts the shape
         special_index_shape = tuple(int(x) for x in special_index_shape)
         self.index_map_m_positive_arr = (
@@ -616,7 +618,16 @@ class ModeIndicesLMBase(ABC, ParallelModuleBase):
         negative_mode_arr = md.copy()
         negative_mode_arr[1] *= -1
         # mode indices for all negative m-modes
-        self.negative_mode_indices = self.special_index_map_arr[tuple(negative_mode_arr)]
+        negative_mode_indices = self.special_index_map_arr[tuple(negative_mode_arr)]
+        # mode lists need not be closed under (k, n) -> (-k, -n); flag modes whose partner
+        # is not stored and point them at themselves so lookups stay in bounds.
+        # AmplitudeBase.__call__ zeros their amplitudes.
+        self.negative_mode_missing = negative_mode_indices < 0
+        self.negative_mode_indices = self.xp.where(
+            self.negative_mode_missing,
+            self.xp.arange(self.num_stored_modes, dtype=negative_mode_indices.dtype),
+            negative_mode_indices,
+        )
 
     @property
     @abstractmethod

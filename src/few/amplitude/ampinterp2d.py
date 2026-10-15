@@ -462,7 +462,7 @@ class AmpInterpKerrEccEqv2(AmplitudeBase, KerrEccentricEquatorialv2):
         AmplitudeBase.__init__(self)
 
         self.filename = (
-            "ZNAmps_l10_m10_n55_DS2Outer_reduced.h5" if filename is None else filename
+            "ZNAmps_l10_m10_n55_DS2Outer_reduced_v2.h5" if filename is None else filename
         )
 
         from few import get_file_manager
@@ -692,7 +692,7 @@ class AmpInterpKerrEccEqExtended(AmpInterpKerrEccEqv2):
         AmplitudeBase.__init__(self)
 
         self.filename = (
-            "ZNAmps_l24_m24_n250_DS2Outer_v4.h5" if filename is None else filename
+            "ZNAmps_l24_m24_n181_DS2Outer_v6.h5" if filename is None else filename
         )
 
         from few import get_file_manager
