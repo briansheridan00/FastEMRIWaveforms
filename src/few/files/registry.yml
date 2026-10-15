@@ -314,4 +314,9 @@ files:
       - algorithm: sha256
         value: c8030bb93ba3cde68271bacbc5562e0691c00f1ed0328f3100a9d922140d0367
     tags: [testfile]
+  - name: ZNAmps_l24_m24_n183_DS2Outer_v8.h5
+    checksums:
+      - algorithm: sha256
+        value: 8c1d35e57c5157bf2633175d02ac5718bf13526b7de2e012e2998485daa2af18
+    tags: [testfile]
   

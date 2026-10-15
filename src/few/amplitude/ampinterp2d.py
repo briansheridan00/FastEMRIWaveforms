@@ -692,7 +692,7 @@ class AmpInterpKerrEccEqExtended(AmpInterpKerrEccEqv2):
         AmplitudeBase.__init__(self)
 
         self.filename = (
-            "ZNAmps_l24_m24_n181_DS2Outer_v6.h5" if filename is None else filename
+            "ZNAmps_l24_m24_n181_DS2Outer_v8.h5" if filename is None else filename
         )
 
         from few import get_file_manager
