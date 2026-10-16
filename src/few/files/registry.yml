@@ -273,42 +273,42 @@ files:
     checksums:
       - algorithm: sha256
         value: 2208e249a068ba69965c1bc3d8e0cf2efe7d77001d52068b9921769f9c5ec927
-    tags: [testfile]
+    tags: [deprecated]
   - name: ZNAmps_l17_m17_n150_DS2Outer.h5
     checksums:
       - algorithm: sha256
         value: 406fd4cfd4a019ca9cd490841ee857ef6555d78c205d23a5507cf1fbe5b0d8ee
-    tags: [testfile]
+    tags: [deprecated]
   - name: ZNAmps_l18_m18_n256_DS2Outer_v1.h5
     checksums:
       - algorithm: sha256
         value: 81b626f6d19b06220cf0fb68b9455256b5871799a7968f88ef6b27f9128a7bea
-    tags: [testfile]
+    tags: [deprecated]
   - name: ZNAmps_l18_m18_n279_DS2Outer_v2.h5
     checksums:
       - algorithm: sha256
         value: 8a19c5165f72a63318771bc085e534bbc11320b99ac2fb1e8169d4ad28e49904
-    tags: [testfile]
+    tags: [deprecated]
   - name: ZNAmps_l20_m20_n275_DS2Outer_v3.h5
     checksums:
       - algorithm: sha256
         value: fdeae06d60db8743991839cc29cc373b7927311afdd01372c76d48fb127e0c3f
-    tags: [testfile]
+    tags: [deprecated]
   - name: ZNAmps_l24_m24_n250_DS2Outer_v4.h5
     checksums:
       - algorithm: sha256
         value: 0019476389caf8c2c1acdaff9914e0808183bce4731d4ef7e336ed1c33b95f34
-    tags: [testfile]
+    tags: [deprecated]
   - name: ZNAmps_l24_m24_n275_DS2Outer_v5.h5
     checksums:
       - algorithm: sha256
         value: 5c87795036b93c8ee9d44e879c70af5941df6cae086870c0ace29a3ed9ccf22d
-    tags: [testfile]
+    tags: [deprecated]
   - name: ZNAmps_l24_m24_n181_DS2Outer_v6.h5
     checksums:
       - algorithm: sha256
         value: 8bbcb87543c774b1e243f7fe52aba0fe8b4164426ac0c6de4d6891772de962dd
-    tags: [testfile]
+    tags: [deprecated]
   - name: ZNAmps_l10_m10_n55_DS2Outer_reduced_v2.h5
     checksums:
       - algorithm: sha256
